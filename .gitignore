@@ -1,0 +1,8 @@
+# Targets
+/test/write1
+/test/write1_static
+
+# Extensions
+*.a
+*.so
+*.o
