@@ -1,4 +1,6 @@
 # Targets
+/test/alarm1
+/test/alarm1_static
 /test/write1
 /test/write1_static
 
