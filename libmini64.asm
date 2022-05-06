@@ -1,4 +1,9 @@
 
+    global signal_restorer:function
+signal_restorer:
+    mov rax, 0xf
+    syscall
+
 %macro gensys 2
     global sys_%2:function
 sys_%2:
@@ -25,6 +30,7 @@ extern    errno
     gensys   9, mmap
     gensys  10, mprotect
     gensys  11, munmap
+    gensys  13, sigaction
     gensys  14, sigprocmask
     gensys  22, pipe
     gensys  32, dup

@@ -8,6 +8,9 @@ long errno;
 #define WRAPPER_RETptr(type) \
     errno = 0; if(ret < 0) { errno = -ret; return NULL; } return ((type) ret);
 
+// Implement in libmini64.asm
+void signal_restorer(void);
+
 ssize_t read(int fd, char *buf, size_t count)
 {
     long ret = sys_read(fd, buf, count);
@@ -43,6 +46,34 @@ int mprotect(void *addr, size_t len, int prot)
 int munmap(void *addr, size_t len)
 {
     long ret = sys_munmap(addr, len);
+    WRAPPER_RETval(int);
+}
+
+int sigaction(int signum, const struct sigaction *restrict act,
+              struct sigaction *restrict oldact)
+{
+    long ret;
+    struct kernel_sigaction kact, koact;
+
+    if (act) {
+        kact.sa_handler = act->sa_handler;
+        kact.sa_flags = act->sa_flags | SA_RESTORER;
+        kact.sa_restorer = &signal_restorer;
+        memcpy(&kact.sa_mask, &act->sa_mask, sizeof(sigset_t));
+    }
+
+    ret = sys_sigaction(signum,
+                        act ? &kact : NULL,
+                        oldact ? &koact : NULL,
+                        8);
+
+    if (oldact) {
+        oldact->sa_handler = koact.sa_handler;
+        oldact->sa_flags = koact.sa_flags;
+        oldact->sa_restorer = koact.sa_restorer;
+        memcpy(&oldact->sa_mask, &koact.sa_mask, sizeof(sigset_t));
+    }
+
     WRAPPER_RETval(int);
 }
 
@@ -291,6 +322,21 @@ void perror(const char *prefix)
     return;
 }
 
+void *memcpy(void *restrict dest, const void *restrict src, size_t n)
+{
+    void *ret;
+
+    ret = dest;
+
+    while (n-- > 0) {
+        *(char *)dest = *(char *)src;
+        (char *)dest++;
+        (char *)src++;
+    }
+
+    return ret;
+}
+
 int sigemptyset(sigset_t *set)
 {
     for (int i = 0; i < _SIGSET_NWORDS; ++i) {
@@ -318,4 +364,19 @@ int sigismember(const sigset_t *set, int signo)
     }
 
     return set->__val[0] & (1 << (signo - 1)) ? 1 : 0;
+}
+
+sighandler_t signal(int signum, sighandler_t handler)
+{
+    struct sigaction act, oldact;
+
+    act.sa_handler = handler;
+    act.sa_sigaction = NULL;
+    sigemptyset(&act.sa_mask);
+    sigaddset(&act.sa_mask, signum);
+    act.sa_flags = SA_RESTART;
+
+    sigaction(signum, &act, &oldact);
+
+    return NULL;
 }

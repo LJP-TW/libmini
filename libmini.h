@@ -9,6 +9,10 @@ typedef int uid_t;
 typedef int gid_t;
 typedef int pid_t;
 
+typedef long int clock_t;
+
+typedef void (*sighandler_t)(int);
+
 extern long errno;
 
 #define NULL        ((void*) 0)
@@ -152,6 +156,8 @@ extern long errno;
 #define SA_NOCLDWAIT    2      /* Don't create zombie on child death.  */
 #define SA_SIGINFO      4      /* Invoke signal-catching function with 
                                   three arguments instead of one.  */
+
+#define SA_RESTORER     0x04000000
 #define SA_ONSTACK      0x08000000 /* Use signal stack by using 
                                       'sa_restorer'. */
 #define SA_RESTART      0x10000000 /* Restart syscall on signal return.  */
@@ -163,6 +169,10 @@ extern long errno;
 #define SIG_BLOCK       0          /* Block signals.  */
 #define SIG_UNBLOCK     1          /* Unblock signals.  */
 #define SIG_SETMASK     2          /* Set the set of blocked signals.  */
+
+#define SIG_ERR         ((sighandler_t) -1)     /* Error return.  */
+#define SIG_DFL         ((sighandler_t)  0)     /* Default action.  */
+#define SIG_IGN         ((sighandler_t)  1)     /* Ignore signal.  */
 
 struct timespec {
     long tv_sec;        /* seconds */
@@ -184,6 +194,66 @@ typedef struct {
   unsigned long int __val[_SIGSET_NWORDS];
 } sigset_t;
 
+union sigval {
+  int sival_int;
+  void *sival_ptr;
+};
+
+typedef struct {
+    int      si_signo;     /* Signal number */
+    int      si_errno;     /* An errno value */
+    int      si_code;      /* Signal code */
+    int      si_trapno;    /* Trap number that caused
+                              hardware-generated signal
+                              (unused on most architectures) */
+    pid_t    si_pid;       /* Sending process ID */
+    uid_t    si_uid;       /* Real user ID of sending process */
+    int      si_status;    /* Exit value or signal */
+    clock_t  si_utime;     /* User time consumed */
+    clock_t  si_stime;     /* System time consumed */
+    union sigval si_value; /* Signal value */
+    int      si_int;       /* POSIX.1b signal */
+    void    *si_ptr;       /* POSIX.1b signal */
+    int      si_overrun;   /* Timer overrun count;
+                              POSIX.1b timers */
+    int      si_timerid;   /* Timer ID; POSIX.1b timers */
+    void    *si_addr;      /* Memory location which caused fault */
+    long     si_band;      /* Band event (was int in
+                              glibc 2.3.2 and earlier) */
+    int      si_fd;        /* File descriptor */
+    short    si_addr_lsb;  /* Least significant bit of address
+                              (since Linux 2.6.32) */
+    void    *si_lower;     /* Lower bound when address violation
+                              occurred (since Linux 3.19) */
+    void    *si_upper;     /* Upper bound when address violation
+                              occurred (since Linux 3.19) */
+    int      si_pkey;      /* Protection key on PTE that caused
+                              fault (since Linux 4.6) */
+    void    *si_call_addr; /* Address of system call instruction
+                              (since Linux 3.5) */
+    int      si_syscall;   /* Number of attempted system call
+                              (since Linux 3.5) */
+    unsigned int si_arch;  /* Architecture of attempted system call
+                              (since Linux 3.5) */
+} siginfo_t;
+
+struct sigaction {
+    void      (*sa_handler)(int);
+    void      (*sa_sigaction)(int, siginfo_t *, void *);
+    sigset_t    sa_mask;
+    int         sa_flags;
+    void      (*sa_restorer)(void);
+};
+
+/* from glibc /sysdeps/unix/sysv/linux/kernel_sigaction.h */
+struct kernel_sigaction
+{
+    sighandler_t sa_handler;
+    unsigned long sa_flags;
+    void (*sa_restorer)(void);
+    sigset_t sa_mask;
+};
+
 /* system calls */
 long sys_read(int fd, char *buf, size_t count);
 long sys_write(int fd, const void *buf, size_t count);
@@ -192,6 +262,10 @@ long sys_close(unsigned int fd);
 long sys_mmap(void *addr, size_t len, int prot, int flags, int fd, off_t off);
 long sys_mprotect(void *addr, size_t len, int prot);
 long sys_munmap(void *addr, size_t len);
+long sys_sigaction(int signum,
+                   const struct kernel_sigaction *restrict act,
+                   struct kernel_sigaction *restrict oldact,
+                   size_t sigsetsize);
 long sys_sigprocmask(int how, const sigset_t *restrict set,
                      sigset_t *restrict oldset, size_t sigsetsize);
 long sys_pipe(int *filedes);
@@ -231,6 +305,8 @@ int close(unsigned int fd);
 void *mmap(void *addr, size_t len, int prot, int flags, int fd, off_t off);
 int mprotect(void *addr, size_t len, int prot);
 int munmap(void *addr, size_t len);
+int sigaction(int signum, const struct sigaction *restrict act,
+              struct sigaction *restrict oldact);
 int sigprocmask(int how, const sigset_t *restrict set,
                 sigset_t *restrict oldset);
 int pipe(int *filedes);
@@ -266,9 +342,11 @@ void bzero(void *s, size_t size);
 size_t strlen(const char *s);
 void perror(const char *prefix);
 unsigned int sleep(unsigned int s);
+void *memcpy(void *restrict dest, const void *restrict src, size_t n);
 
 int sigemptyset(sigset_t *set);
 int sigaddset(sigset_t *set, int signo);
 int sigismember(const sigset_t *set, int signo);
+sighandler_t signal(int signum, sighandler_t handler);
 
 #endif /* __LIBMINI_H__ */
