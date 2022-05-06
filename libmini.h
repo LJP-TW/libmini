@@ -13,6 +13,9 @@ extern long errno;
 
 #define NULL        ((void*) 0)
 
+/* from glibc /sysdeps/unix/sysv/linux/bits/types/__sigset_t.h */
+#define _SIGSET_NWORDS (1024 / (8 * sizeof (unsigned long int)))
+
 /* from /usr/include/asm-generic/fcntl.h */
 #define O_ACCMODE   00000003
 #define O_RDONLY    00000000
@@ -176,6 +179,11 @@ struct timezone {
     int tz_dsttime;     /* type of DST correction */
 };
 
+/* from glibc /sysdeps/unix/sysv/linux/bits/types/__sigset_t.h */
+typedef struct {
+  unsigned long int __val[_SIGSET_NWORDS];
+} sigset_t;
+
 /* system calls */
 long sys_read(int fd, char *buf, size_t count);
 long sys_write(int fd, const void *buf, size_t count);
@@ -184,6 +192,8 @@ long sys_close(unsigned int fd);
 long sys_mmap(void *addr, size_t len, int prot, int flags, int fd, off_t off);
 long sys_mprotect(void *addr, size_t len, int prot);
 long sys_munmap(void *addr, size_t len);
+long sys_sigprocmask(int how, const sigset_t *restrict set,
+                     sigset_t *restrict oldset, size_t sigsetsize);
 long sys_pipe(int *filedes);
 long sys_dup(int filedes);
 long sys_dup2(int oldfd, int newfd);
@@ -211,6 +221,7 @@ long sys_setuid(uid_t uid);
 long sys_setgid(gid_t gid);
 long sys_geteuid();
 long sys_getegid();
+long sys_sigpending(sigset_t *set, size_t sigsetsize);
 
 /* wrappers */
 ssize_t read(int fd, char *buf, size_t count);
@@ -220,6 +231,8 @@ int close(unsigned int fd);
 void *mmap(void *addr, size_t len, int prot, int flags, int fd, off_t off);
 int mprotect(void *addr, size_t len, int prot);
 int munmap(void *addr, size_t len);
+int sigprocmask(int how, const sigset_t *restrict set,
+                sigset_t *restrict oldset);
 int pipe(int *filedes);
 int dup(int filedes);
 int dup2(int oldfd, int newfd);
@@ -247,10 +260,15 @@ int setuid(uid_t uid);
 int setgid(gid_t gid);
 uid_t geteuid();
 gid_t getegid();
+int sigpending(sigset_t *set);
 
 void bzero(void *s, size_t size);
 size_t strlen(const char *s);
 void perror(const char *prefix);
 unsigned int sleep(unsigned int s);
+
+int sigemptyset(sigset_t *set);
+int sigaddset(sigset_t *set, int signo);
+int sigismember(const sigset_t *set, int signo);
 
 #endif /* __LIBMINI_H__ */

@@ -46,6 +46,13 @@ int munmap(void *addr, size_t len)
     WRAPPER_RETval(int);
 }
 
+int sigprocmask(int how, const sigset_t *restrict set,
+                sigset_t *restrict oldset)
+{
+    long ret = sys_sigprocmask(how, set, oldset, 8);
+    WRAPPER_RETval(int);
+}
+
 int pipe(int *filedes)
 {
     long ret = sys_pipe(filedes);
@@ -208,6 +215,12 @@ gid_t getegid()
     WRAPPER_RETval(uid_t);
 }
 
+int sigpending(sigset_t *set)
+{
+    long ret = sys_sigpending(set, 8);
+    WRAPPER_RETval(int);
+}
+
 void bzero(void *s, size_t size)
 {
     char *ptr = (char *) s;
@@ -276,4 +289,33 @@ void perror(const char *prefix)
         write(2, errmsg[backup], strlen(errmsg[backup]));
     write(2, "\n", 1);
     return;
+}
+
+int sigemptyset(sigset_t *set)
+{
+    for (int i = 0; i < _SIGSET_NWORDS; ++i) {
+        set->__val[i] = 0;
+    }
+
+    return 0;
+}
+
+int sigaddset(sigset_t *set, int signo)
+{
+    if (signo >= 32 || signo < 0) {
+        return -1;
+    }
+
+    set->__val[0] |= (1 << (signo - 1));
+
+    return 0;
+}
+
+int sigismember(const sigset_t *set, int signo)
+{
+    if (signo >= 32 || signo < 0) {
+        return -1;
+    }
+
+    return set->__val[0] & (1 << (signo - 1)) ? 1 : 0;
 }

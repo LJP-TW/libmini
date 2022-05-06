@@ -25,6 +25,7 @@ extern    errno
     gensys   9, mmap
     gensys  10, mprotect
     gensys  11, munmap
+    gensys  14, sigprocmask
     gensys  22, pipe
     gensys  32, dup
     gensys  33, dup2
@@ -52,6 +53,7 @@ extern    errno
     gensys 106, setgid
     gensys 107, geteuid
     gensys 108, getegid
+    gensys 127, sigpending
 
     global open:function
 open:

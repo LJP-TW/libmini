@@ -1,6 +1,8 @@
 # Targets
 /test/alarm1
 /test/alarm1_static
+/test/alarm2
+/test/alarm2_static
 /test/write1
 /test/write1_static
 
@@ -8,3 +10,4 @@
 *.a
 *.so
 *.o
+*.log
