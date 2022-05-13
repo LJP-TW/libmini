@@ -1,4 +1,4 @@
-TARGET := write1 alarm1 alarm2 alarm3
+TARGET := write1 alarm1 alarm2 alarm3 jmp1
 
 all: $(TARGET)
 
@@ -21,6 +21,11 @@ alarm2: start
 	ld -m elf_x86_64 -static -o $@_static $@.o $<.o -L. -L.. -lmini
 
 alarm3: start
+	gcc -c -g -Wall -fno-stack-protector -nostdlib -I. -I.. -DUSEMINI $@.c
+	ld -m elf_x86_64 --dynamic-linker /lib64/ld-linux-x86-64.so.2 -o $@ $@.o $<.o -L. -L.. -lmini
+	ld -m elf_x86_64 -static -o $@_static $@.o $<.o -L. -L.. -lmini
+
+jmp1: start
 	gcc -c -g -Wall -fno-stack-protector -nostdlib -I. -I.. -DUSEMINI $@.c
 	ld -m elf_x86_64 --dynamic-linker /lib64/ld-linux-x86-64.so.2 -o $@ $@.o $<.o -L. -L.. -lmini
 	ld -m elf_x86_64 -static -o $@_static $@.o $<.o -L. -L.. -lmini

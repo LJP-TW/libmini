@@ -109,3 +109,61 @@ sleep_failed:
 sleep_quit:
     add    rsp, 32
     ret
+
+extern sigprocmask
+
+; int setjmp(jmp_buf env); 
+    global setjmp:function
+setjmp:
+    ; save current registers
+    mov [rdi], rbx
+    mov [rdi + 8], rsp
+    mov [rdi + 0x10], rbp
+    mov [rdi + 0x18], r12
+    mov [rdi + 0x20], r13
+    mov [rdi + 0x28], r14
+    mov [rdi + 0x30], r15
+    mov rax, [rsp]
+    mov [rdi + 0x38], rax
+    ; allocate space
+    sub rsp, 0x10
+    mov [rsp], rdi
+    ; get current process signal mask
+    mov rdi, 0
+    mov rsi, 0
+    lea rdx, [rsp + 8]
+    call sigprocmask WRT ..plt
+    ; save current process signal mask
+    mov rdi, [rsp]
+    mov rsi, [rsp + 8]
+    mov [rdi + 0x40], rsi
+    ; return
+    mov rax, 0
+    add rsp, 0x10
+    ret
+
+; void longjmp(jmp_buf env, int val);
+    global longjmp:function
+longjmp:
+    ; restore registers
+    mov rbx, [rdi]
+    mov rsp, [rdi + 8]
+    mov rbp, [rdi + 0x10]
+    mov r12, [rdi + 0x18]
+    mov r13, [rdi + 0x20]
+    mov r14, [rdi + 0x28]
+    mov r15, [rdi + 0x30]
+    mov rax, [rdi + 0x38]
+    mov [rsp], rax
+    ; allocate space
+    sub rsp, 0x8
+    mov [rsp], rsi
+    ; restore process signal mask
+    mov rdx, 0
+    lea rsi, [rdi + 0x40]
+    mov rdi, 2 ; SIG_SETMASK
+    call sigprocmask WRT ..plt
+    ; return
+    mov rax, [rsp]
+    add rsp, 0x8
+    ret

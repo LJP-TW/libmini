@@ -256,6 +256,12 @@ struct kernel_sigaction
     sigset_t sa_mask;
 };
 
+typedef struct jmp_buf_s {
+    // RBX, RSP, RBP, R12, R13, R14, R15, and the return address
+    long long reg[8];
+    sigset_t mask;
+} jmp_buf[1];
+
 /* system calls */
 long sys_read(int fd, char *buf, size_t count);
 long sys_write(int fd, const void *buf, size_t count);
@@ -352,5 +358,8 @@ int sigaddset(sigset_t *set, int signo);
 int sigdelset(sigset_t *set, int signo);
 int sigismember(const sigset_t *set, int signo);
 sighandler_t signal(int signum, sighandler_t handler);
+
+int setjmp(jmp_buf env);
+void longjmp(jmp_buf env, int val);
 
 #endif /* __LIBMINI_H__ */
