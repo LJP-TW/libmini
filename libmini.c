@@ -346,6 +346,15 @@ int sigemptyset(sigset_t *set)
     return 0;
 }
 
+int sigfillset(sigset_t *set)
+{
+    for (int i = 0; i < _SIGSET_NWORDS; ++i) {
+        set->__val[i] = 0xffffffffffffffff;
+    }
+
+    return 0;
+}
+
 int sigaddset(sigset_t *set, int signo)
 {
     if (signo >= 32 || signo < 0) {
@@ -353,6 +362,17 @@ int sigaddset(sigset_t *set, int signo)
     }
 
     set->__val[0] |= (1 << (signo - 1));
+
+    return 0;
+}
+
+int sigdelset(sigset_t *set, int signo)
+{
+    if (signo >= 32 || signo < 0) {
+        return -1;
+    }
+
+    set->__val[0] &= ~(1 << (signo - 1));
 
     return 0;
 }

@@ -347,7 +347,9 @@ unsigned int sleep(unsigned int s);
 void *memcpy(void *restrict dest, const void *restrict src, size_t n);
 
 int sigemptyset(sigset_t *set);
+int sigfillset(sigset_t *set);
 int sigaddset(sigset_t *set, int signo);
+int sigdelset(sigset_t *set, int signo);
 int sigismember(const sigset_t *set, int signo);
 sighandler_t signal(int signum, sighandler_t handler);
 
